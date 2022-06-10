@@ -1,0 +1,54 @@
+image: ruby:latest
+
+stages:
+  - plan dev
+  - up dev
+  - plan prod
+  - up prod
+
+before_script: |
+  # install terraform
+  git clone https://github.com/tfutils/tfenv.git ~/.tfenv
+  echo 'export PATH="$HOME/.tfenv/bin:$PATH"' >> ~/.bash_profile
+  export PATH="$HOME/.tfenv/bin:$PATH"
+  tfenv install latest
+  tfenv use latest
+  terraform --version
+  # install terraspace
+  bundle
+  bundle exec terraspace new shim
+  echo 'export PATH="/usr/local/bin:$PATH' >> ~/.bash_profile
+  export PATH="/usr/local/bin:$PATH"
+
+# Runs on Merge Request Only
+plan_dev:
+  stage: plan dev
+  only:
+  - merge_requests
+  script:
+    - terraspace plan demo
+
+# Runs on Push Only
+up_dev:
+  stage: up dev
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+  script:
+    - terraspace up demo -y
+
+# Runs Manually Only (part 1 of 2)
+plan_prod:
+  stage: plan prod
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+  script:
+    - TS_ENV=prod terraspace plan demo
+
+# Runs Manually Only (part 2 of 2)
+up_prod:
+  stage: up prod
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: manual # manual approval
+  script:
+    - TS_ENV=prod terraspace up demo -y
