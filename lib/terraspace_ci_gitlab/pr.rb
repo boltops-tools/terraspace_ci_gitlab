@@ -37,6 +37,8 @@ module TerraspaceCiGitlab
       end
     rescue Gitlab::Error::Unauthorized => e
       puts "WARN: #{e.message}. Unable to create merge request comment. Please double check your gitlab token"
+    rescue Gitlab::Error::Forbidden => e
+      puts "WARN: #{e.message}. Unable to create merge request comment. The token does not have the permission. Please double check your gitlab token"
     end
 
     def client
